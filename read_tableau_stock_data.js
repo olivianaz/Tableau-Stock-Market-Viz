@@ -15,7 +15,17 @@ async function fetchTableauStockData(){
     if (data.length == headers.length) {
       var tarr = {};
       for (var j=0; j<headers.length; j++) {
-        tarr[headers[j]] = data[j];
+        if (headers[j] == "Date"){
+          var datevalues = data[j].split("-");
+          tarr[headers[j]] = new Date(parseInt(datevalues[0]), parseInt(datevalues[1]) -1, parseInt(datevalues[2]));
+          //console.log("Date:", data[j], datevalues, tarr[headers[j]]);
+        }
+        else if (headers[j] == "Volume") {
+          tarr[headers[j]] = parseInt(data[j]);
+        }
+        else {
+          tarr[headers[j]] = parseFloat(data[j]);
+        }
       }
       lines.push(tarr);
     }
@@ -34,31 +44,36 @@ async function processData(){
   const h = 600;
   const padding = 40;
 
-  const xScale = d3.scaleLinear()
-                   .domain([0, dataset.length - 1])
-                   .range([padding, w - padding]);
+  const xScale = d3.scaleTime()
+                   .rangeRound([0, w - 2*padding])
+                   .domain(d3.extent(dataset, (d) => d["Date"]));
 
   const yScale = d3.scaleLinear()
-                   .domain([0, d3.max(dataset, (d) => parseFloat(d["Adj Close"]))])
-                   .range([h - padding, padding]);
+                   .domain([0, d3.max(dataset, (d) => d["Adj Close"])])
+                   .range([h - 2*padding, 0]);
 
   const svg = d3.select("svg")
                 // Add your code below this line
                 .attr("width", w)
                 .attr("height", h);
 
+  var g = svg.append("g")
+             .attr("transform",
+                   "translate(" + padding + "," + padding + ")");
+
   // add scatter plot
-  svg.selectAll("circle")
+
+  g.selectAll("circle")
      .data(dataset)
      .enter()
      .append("circle")
      // Add your code below this line
-     .attr("cx", (d, i) => xScale(i) )
-     .attr("cy", (d, i) => yScale(parseFloat(d["Adj Close"])))
+     .attr("cx", (d, i) => xScale(d["Date"]) )
+     .attr("cy", (d, i) => yScale(d["Adj Close"]))
      .attr("r", 2);
 
    // add labels
-   svg.selectAll("text")
+   g.selectAll("text")
       .data(dataset)
       .enter()
       .append("text")
@@ -68,23 +83,28 @@ async function processData(){
           return parseInt(d["Adj Close"]);
         }
       })
-      .attr("x", (d, i) => xScale(i + 5))
-      .attr("y", (d, i) => yScale(parseFloat(d["Adj Close"])));
+      .attr("x", (d, i) => xScale(d["Date"]))
+      .attr("y", (d, i) => yScale(d["Adj Close"]));
 
    // add x and y axes
    const xAxis = d3.axisBottom(xScale);
-   // Add your code below this line
    const yAxis = d3.axisLeft(yScale);
-   // Add your code above this line
 
-   svg.append("g")
-      .attr("transform", "translate(0," + (h - padding) + ")")
-      .call(xAxis);
+   g.append("g")
+      .attr("transform", "translate(0," + (h - 2*padding) + ")")
+      .call(xAxis)
+      ;
 
    // Add your code below this line
-   svg.append("g")
-      .attr("transform", "translate(" + padding + ", 0)")
-      .call(yAxis);
+   g.append("g")
+      .call(yAxis)
+      .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+       .attr("dy", "0.71em")
+       .attr("text-anchor", "end")
+       .text("Price ($)");
 }
 
 processData();
