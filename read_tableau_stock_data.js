@@ -13,9 +13,9 @@ async function fetchTableauStockData(){
   for (var i=1; i<allTextLines.length; i++) {
     var data = allTextLines[i].split(',');
     if (data.length == headers.length) {
-      var tarr = [];
+      var tarr = {};
       for (var j=0; j<headers.length; j++) {
-        tarr.push(data[j]);
+        tarr[headers[j]] = data[j];
       }
       lines.push(tarr);
     }
@@ -28,15 +28,7 @@ async function fetchTableauStockData(){
 async function processData(){
   const fetchData = fetchTableauStockData();
   const dataset = await fetchData;
-  const adjCloseColumn = 5;
   console.log("Length: " + dataset.length);
-  var adjClose = [];
-
-  for (var i=0; i<dataset.length; i++){
-    adjClose.push(parseFloat(dataset[i][adjCloseColumn]));
-  }
-  console.log("AdjClose: ");
-  console.log(adjClose);
 
   const w = 1000;
   const h = 600;
@@ -47,7 +39,7 @@ async function processData(){
                    .range([padding, w - padding]);
 
   const yScale = d3.scaleLinear()
-                   .domain([0, d3.max(dataset, (d) => parseFloat(d[adjCloseColumn]))])
+                   .domain([0, d3.max(dataset, (d) => parseFloat(d["Adj Close"]))])
                    .range([h - padding, padding]);
 
   const svg = d3.select("svg")
@@ -62,7 +54,7 @@ async function processData(){
      .append("circle")
      // Add your code below this line
      .attr("cx", (d, i) => xScale(i) )
-     .attr("cy", (d, i) => yScale(parseFloat(d[adjCloseColumn])))
+     .attr("cy", (d, i) => yScale(parseFloat(d["Adj Close"])))
      .attr("r", 2);
 
    // add labels
@@ -73,11 +65,11 @@ async function processData(){
       // Add your code below this line
       .text((d, i) => {
         if (i==0 || i == dataset.length - 1){
-          return parseInt(d[adjCloseColumn]);
+          return parseInt(d["Adj Close"]);
         }
       })
       .attr("x", (d, i) => xScale(i + 5))
-      .attr("y", (d, i) => yScale(parseFloat(d[adjCloseColumn])));
+      .attr("y", (d, i) => yScale(parseFloat(d["Adj Close"])));
 
    // add x and y axes
    const xAxis = d3.axisBottom(xScale);
