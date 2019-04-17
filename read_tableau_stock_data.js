@@ -40,8 +40,9 @@ async function processData(){
   const dataset = await fetchData;
   console.log("Length: " + dataset.length);
 
-  const w = 1000;
+  const w = 600;
   const h = 600;
+  const topmargin = 150;
   const padding = 40;
 
   const xScale = d3.scaleTime()
@@ -50,16 +51,47 @@ async function processData(){
 
   const yScale = d3.scaleLinear()
                    .domain([0, d3.max(dataset, (d) => d["Close"])])
-                   .range([h - 2*padding, 0]);
+                   .range([h - topmargin - padding, 0]);
 
   const svg = d3.select("svg")
-                // Add your code below this line
                 .attr("width", w)
                 .attr("height", h);
 
+  // create a g to group header elements
+  var header_g = svg.append("g")
+                    .attr("transform",
+                          "translate(" + padding + ", 0)");
+
+  const avgClose = d3.mean(dataset, (d) => d["Close"]);
+
+  header_g.append("text")
+          .text("### weeks")
+          .attr("text-anchor", "middle")
+          .attr("x", 0.25 * (w - 2*padding))
+          .attr("y", topmargin/2);
+
+  header_g.append("text")
+          .text("Above " + avgClose.toFixed(1))
+          .attr("text-anchor", "middle")
+          .attr("x", 0.25 * (w - 2*padding))
+          .attr("y", topmargin/2 + 15);
+
+  header_g.append("text")
+          .text("# weeks")
+          .attr("text-anchor", "middle")
+          .attr("x", 0.75 * (w - 2*padding))
+          .attr("y", topmargin/2);
+
+  header_g.append("text")
+          .text("Below " + avgClose.toFixed(1))
+          .attr("text-anchor", "middle")
+          .attr("x", 0.75 * (w - 2*padding))
+          .attr("y", topmargin/2 + 15);
+
+  // create a g to group the chart elements
   var g = svg.append("g")
              .attr("transform",
-                   "translate(" + padding + "," + padding + ")");
+                   "translate(" + padding + "," + topmargin + ")");
 
   // add scatter plot
   g.selectAll("circle")
@@ -88,7 +120,7 @@ async function processData(){
    const yAxis = d3.axisLeft(yScale);
 
    g.append("g")
-      .attr("transform", "translate(0," + (h - 2*padding) + ")")
+      .attr("transform", "translate(0," + (h - topmargin - padding) + ")")
       .call(xAxis)
       ;
 
@@ -97,7 +129,7 @@ async function processData(){
     .append("text")
     .attr("fill", "#000")
     .attr("dy", "0.71em")
-    .attr("transform", "translate(-32," + (0.5*h - padding) + ")" +
+    .attr("transform", "translate(-32," + (0.5*(h - topmargin - padding)) + ")" +
                        "rotate(-90)")
     .text("Price ($)");
 
