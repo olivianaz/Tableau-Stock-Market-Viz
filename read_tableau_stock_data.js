@@ -49,7 +49,7 @@ async function processData(){
                    .domain(d3.extent(dataset, (d) => d["Date"]));
 
   const yScale = d3.scaleLinear()
-                   .domain([0, d3.max(dataset, (d) => d["Adj Close"])])
+                   .domain([0, d3.max(dataset, (d) => d["Close"])])
                    .range([h - 2*padding, 0]);
 
   const svg = d3.select("svg")
@@ -62,29 +62,26 @@ async function processData(){
                    "translate(" + padding + "," + padding + ")");
 
   // add scatter plot
-
   g.selectAll("circle")
      .data(dataset)
      .enter()
      .append("circle")
-     // Add your code below this line
      .attr("cx", (d, i) => xScale(d["Date"]) )
-     .attr("cy", (d, i) => yScale(d["Adj Close"]))
+     .attr("cy", (d, i) => yScale(d["Close"]))
      .attr("r", 2);
 
-   // add labels
-   g.selectAll("text")
+  // add labels
+  g.selectAll("text")
       .data(dataset)
       .enter()
       .append("text")
-      // Add your code below this line
       .text((d, i) => {
         if (i==0 || i == dataset.length - 1){
-          return parseInt(d["Adj Close"]);
+          return parseInt(d["Close"]);
         }
       })
       .attr("x", (d, i) => xScale(d["Date"]))
-      .attr("y", (d, i) => yScale(d["Adj Close"]));
+      .attr("y", (d, i) => yScale(d["Close"]));
 
    // add x and y axes
    const xAxis = d3.axisBottom(xScale);
@@ -95,16 +92,29 @@ async function processData(){
       .call(xAxis)
       ;
 
-   // Add your code below this line
    g.append("g")
-      .call(yAxis)
-      .append("text")
-      .attr("fill", "#000")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-       .attr("dy", "0.71em")
-       .attr("text-anchor", "end")
-       .text("Price ($)");
+    .call(yAxis)
+    .append("text")
+    .attr("fill", "#000")
+    .attr("dy", "0.71em")
+    .attr("transform", "translate(-32," + (0.5*h - padding) + ")" +
+                       "rotate(-90)")
+    .text("Price ($)");
+
+   // draw the line path
+   var line = d3.line()
+                .x(function(d) { return xScale(d["Date"])})
+                .y(function(d) { return yScale(d["Close"])})
+   ;
+
+   g.append("path")
+    .datum(dataset)
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")
+    .attr("stroke-width", 1.5)
+    .attr("d", line);
 }
 
 processData();
