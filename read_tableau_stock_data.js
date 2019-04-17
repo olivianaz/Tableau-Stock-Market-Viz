@@ -133,16 +133,36 @@ async function processData(){
                        "rotate(-90)")
     .text("Price ($)");
 
-   // draw the line path
+   // draw the line path with different colors compared to the selected threshold value
+   g.append("linearGradient")
+       .attr("id", "temperature-gradient")
+       .attr("gradientUnits", "userSpaceOnUse")
+       .attr("x1", 0)
+       .attr("y1", yScale(0))
+       .attr("x2", 0)
+       .attr("y2", yScale(avgClose))
+     .selectAll("stop")
+       .data([
+         {offset: "0%", color: "Salmon"},
+         {offset: "100%", color: "Salmon"},
+         {offset: "100%", color: "SteelBlue"}
+       ])
+     .enter().append("stop")
+       .attr("offset", function(d) { return d.offset; })
+       .attr("stop-color", function(d) { return d.color; });
+
+
    var line = d3.line()
                 .x(function(d) { return xScale(d["Date"])})
                 .y(function(d) { return yScale(d["Close"])})
    ;
 
+
+
    g.append("path")
     .datum(dataset)
     .attr("fill", "none")
-    .attr("stroke", "steelblue")
+    .attr("class", "line")
     .attr("stroke-linejoin", "round")
     .attr("stroke-linecap", "round")
     .attr("stroke-width", 1.5)
@@ -155,7 +175,7 @@ async function processData(){
     g.append("path")
      .datum([dataset[0], dataset[dataset.length-1]])
      .attr("stroke", "LightSlateGray")
-     .attr("stroke-width", 1.5)
+     .attr("stroke-width", 0.9)
      .style("stroke-dasharray", ("3, 1"))
      .attr("d", referenceLine);
 }
