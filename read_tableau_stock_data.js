@@ -100,7 +100,8 @@ async function processData(){
      .append("circle")
      .attr("cx", (d, i) => xScale(d["Date"]) )
      .attr("cy", (d, i) => yScale(d["Close"]))
-     .attr("r", 2);
+     .attr("r", 2)
+     .attr("class", "gradient-fill");
 
   // add labels
   g.selectAll("text")
@@ -162,7 +163,7 @@ async function processData(){
    g.append("path")
     .datum(dataset)
     .attr("fill", "none")
-    .attr("class", "line")
+    .attr("class", "gradient")
     .attr("stroke-linejoin", "round")
     .attr("stroke-linecap", "round")
     .attr("stroke-width", 1.5)
