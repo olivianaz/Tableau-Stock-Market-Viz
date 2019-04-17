@@ -147,6 +147,17 @@ async function processData(){
     .attr("stroke-linecap", "round")
     .attr("stroke-width", 1.5)
     .attr("d", line);
+
+    // draw reference line
+    var referenceLine = d3.line()
+                          .x(function(d) { return xScale(d["Date"])})
+                          .y(yScale(avgClose));
+    g.append("path")
+     .datum([dataset[0], dataset[dataset.length-1]])
+     .attr("stroke", "LightSlateGray")
+     .attr("stroke-width", 1.5)
+     .style("stroke-dasharray", ("3, 1"))
+     .attr("d", referenceLine);
 }
 
 processData();
