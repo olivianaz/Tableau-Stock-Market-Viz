@@ -48,15 +48,123 @@ function outputDate(dt){
   return dateString;
 }
 
+// globals for the chart
+// and the chart elements that would not change
+const w = 600;
+const h = 600;
+const topmargin = 150;
+const padding = 40;
+const svg = d3.select("svg")
+              .attr("width", w)
+              .attr("height", h);
+// create a g to group header elements
+const header_g = svg.append("g")
+                  .attr("transform",
+                        "translate(" + padding + ", 0)");
+
+header_g.append("text")
+        .attr("id", "num_weeks_above_price")
+        .text("### weeks")
+        .attr("text-anchor", "middle")
+        .attr("x", 0.25 * (w - 2*padding))
+        .attr("y", topmargin/2);
+
+header_g.append("text")
+        .attr("id", "txt_above_price")
+        .text("Above ")
+        .attr("text-anchor", "middle")
+        .attr("x", 0.25 * (w - 2*padding))
+        .attr("y", topmargin/2 + 15);
+
+header_g.append("text")
+        .attr("id", "num_weeks_below_price")
+        .text("# weeks")
+        .attr("text-anchor", "middle")
+        .attr("x", 0.75 * (w - 2*padding))
+        .attr("y", topmargin/2);
+
+header_g.append("text")
+        .attr("id", "txt_below_price")
+        .text("Below ")
+        .attr("text-anchor", "middle")
+        .attr("x", 0.75 * (w - 2*padding))
+        .attr("y", topmargin/2 + 15);
+
+// create a g to group the chart elements
+var g = svg.append("g")
+           .attr("transform",
+                 "translate(" + padding + "," + topmargin + ")");
+
+function redrawReferenceLines(dt, selectedDate, selectedClose, yScale, xScale){
+  d3.selectAll(".reference-line").remove();
+
+  var horizontalLine = d3.line()
+                        .x(function(d) { return xScale(d["Date"])})
+                        .y(yScale(selectedClose));
+
+  g.append("path")
+   .attr("class", "reference-line")
+   .datum([dt[0], dt[dt.length-1]])
+   .attr("stroke", "LightSlateGray")
+   .attr("stroke-width", 0.9)
+   .style("stroke-dasharray", ("3, 1"))
+   .attr("d", horizontalLine);
+
+   if (selectedDate){
+     var maxY = d3.max(dt, (d) => d["Close"]);
+     var verticalLine = d3.line()
+                          .x(function(d){ return xScale(selectedDate)})
+                          .y((dy) => yScale(dy));
+
+     g.append("path")
+      .attr("class", "reference-line")
+      .datum([0, maxY])
+      .attr("stroke", "LightSlateGray")
+      .attr("stroke-width", 0.9)
+      .style("stroke-dasharray", ("3, 1"))
+      .attr("d", verticalLine);
+   }
+
+   // update the header texts
+   var weeksAbove = d3.sum(dt, (d) => {
+     if (d["Close"] > selectedClose){
+       return 1;
+     }
+     return 0;
+   });
+
+   var weeksBelow = d3.sum(dt, (d) => {
+     if (d["Close"] <= selectedClose){
+       return 1;
+     }
+     return 0;
+   });
+
+   header_g.select("#num_weeks_below_price")
+           .text(weeksBelow.toFixed(0) + " weeks");
+   header_g.select("#num_weeks_above_price")
+           .text(weeksAbove.toFixed(0) + " weeks");
+
+   header_g.select("#txt_above_price")
+           .text("Above " + selectedClose.toFixed(1));
+
+
+   header_g.select("#txt_below_price")
+           .text("Below " + selectedClose.toFixed(1));
+
+   // update gradients
+   svg.select("#temperature-gradient")
+       .attr("y2", yScale(selectedClose));
+}
+
 async function processData(){
   const fetchData = fetchTableauStockData();
   const dataset = await fetchData;
   console.log("Length: " + dataset.length);
 
-  const w = 600;
-  const h = 600;
-  const topmargin = 150;
-  const padding = 40;
+
+  var paramReference = d3.select("#param-compare")
+                         .on("change", changeReference);
 
   const xScale = d3.scaleTime()
                    .rangeRound([0, w - 2*padding])
@@ -66,52 +174,21 @@ async function processData(){
                    .domain([0, d3.max(dataset, (d) => d["Close"])])
                    .range([h - topmargin - padding, 0]);
 
-  const svg = d3.select("svg")
-                .attr("width", w)
-                .attr("height", h);
-
-  // create a g to group header elements
-  var header_g = svg.append("g")
-                    .attr("transform",
-                          "translate(" + padding + ", 0)");
-
   const avgClose = d3.mean(dataset, (d) => d["Close"]);
   const maxY = d3.max(dataset, (d) => d["Close"]);
   const maxIntraDayRange = d3.max(dataset, (d) => d["High"] - d["Low"]);
 
-  header_g.append("text")
-          .text("### weeks")
-          .attr("text-anchor", "middle")
-          .attr("x", 0.25 * (w - 2*padding))
-          .attr("y", topmargin/2);
+  // called when the parameter to compare against changes
+  function changeReference(){
+    //console.log(form);
+    var form_val = d3.select('input[name="mode"]:checked').node().value;
+    if (form_val == "avg_close"){
+      redrawReferenceLines(dataset, null, avgClose, yScale, xScale);
+    }
+  }
 
-  header_g.append("text")
-          .text("Above " + avgClose.toFixed(1))
-          .attr("text-anchor", "middle")
-          .attr("x", 0.25 * (w - 2*padding))
-          .attr("y", topmargin/2 + 15);
-
-  header_g.append("text")
-          .text("# weeks")
-          .attr("text-anchor", "middle")
-          .attr("x", 0.75 * (w - 2*padding))
-          .attr("y", topmargin/2);
-
-  header_g.append("text")
-          .text("Below " + avgClose.toFixed(1))
-          .attr("text-anchor", "middle")
-          .attr("x", 0.75 * (w - 2*padding))
-          .attr("y", topmargin/2 + 15);
-
-
-
-  // create a g to group the chart elements
-  var g = svg.append("g")
-             .attr("transform",
-                   "translate(" + padding + "," + topmargin + ")");
-
-   // define gradients
-   svg.append("linearGradient")
+  // define gradients
+  svg.append("linearGradient")
        .attr("id", "temperature-gradient")
        .attr("gradientUnits", "userSpaceOnUse")
        .attr("x1", 0)
@@ -196,6 +273,16 @@ async function processData(){
      })
      .on("mouseout", function(d){
        tooltip.style("opacity", 0);
+     })
+     .on("click", function(d){
+       // update the reference line if comparing against specific date
+       var form_val = d3.select('input[name="mode"]:checked').node().value;
+       if (form_val == "date"){
+         var selectedDate = d["Date"];
+         var selectedClose = d["Close"];
+
+         redrawReferenceLines(dataset, selectedDate, selectedClose, yScale, xScale);
+       }
      });
 
   // add labels
@@ -217,8 +304,7 @@ async function processData(){
 
    g.append("g")
       .attr("transform", "translate(0," + (h - topmargin - padding) + ")")
-      .call(xAxis)
-      ;
+      .call(xAxis);
 
    g.append("g")
     .call(yAxis)
@@ -230,9 +316,6 @@ async function processData(){
     .text("Price ($)");
 
    // draw the line path with different colors compared to the selected threshold value
-
-
-
    var line = d3.line()
                 .x(function(d) { return xScale(d["Date"])})
                 .y(function(d) { return yScale(d["Close"])});
@@ -245,17 +328,8 @@ async function processData(){
     .attr("stroke-width", 1.5)
     .attr("d", line);
 
-    // draw reference line
-    var referenceLine = d3.line()
-                          .x(function(d) { return xScale(d["Date"])})
-                          .y(yScale(avgClose));
-    g.append("path")
-     .datum([dataset[0], dataset[dataset.length-1]])
-     .attr("stroke", "LightSlateGray")
-     .attr("stroke-width", 0.9)
-     .style("stroke-dasharray", ("3, 1"))
-     .attr("d", referenceLine);
-
+   // draw reference line
+   redrawReferenceLines(dataset, null, avgClose, yScale, xScale);
 }
 
 processData();

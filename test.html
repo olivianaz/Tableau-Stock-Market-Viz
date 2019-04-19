@@ -7,9 +7,7 @@
     body {
       font-family: 'Calibri',sans-serif;
     }
-    .tooltip-svg {
-      border: 1px solid black;
-    }
+
     .entry-title {
       font-size: 1.6em;
       font-weight: bold;
@@ -22,7 +20,7 @@
       font-style: italic;
       margin: 0;
     }
-    .entry, .param-title, .param-item {
+    .entry, .param-title, .param-body {
       font-size: 0.85em;
       line-height: 1.3;
     }
@@ -80,9 +78,11 @@
     </div>
     <div class="column-right">
       <div class="param-title">Compare Against</div>
-      <div class="param-item">
-      <input type="radio" name="param-compare" value="male"> Average Close<br>
-      <input type="radio" name="param-compare" value="female"> Date<br>
+      <div class="param-body">
+        <form id="param-compare">
+          <input type="radio" name="mode" value="avg_close" checked> Average Close<br>
+          <input type="radio" name="mode" value="date"> Date<br>
+        </form>
       </div>
     </div>
   </div>
