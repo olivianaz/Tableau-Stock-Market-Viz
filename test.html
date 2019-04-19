@@ -5,7 +5,10 @@
       background-color: white;
     }
     body {
-      font-family: 'Poppins',sans-serif;
+      font-family: 'Calibri',sans-serif;
+    }
+    .tooltip-svg {
+      border: 1px solid black;
     }
     .entry-title {
       font-size: 1.6em;
@@ -55,6 +58,16 @@
         fill: url(#temperature-gradient);
         stroke: url(#temperature-gradient);
         stroke-width: 1.5px;
+    }
+    .tooltip {
+      position: absolute;
+      z-index: 10;
+      opacity: 0;
+      background-color: white;
+      color: #333333;
+      font-weight: bold;
+      font-size: 0.8em;
+      text-align: center;
     }
   </style>
 </head>

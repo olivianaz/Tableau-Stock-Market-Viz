@@ -35,6 +35,19 @@ async function fetchTableauStockData(){
   return lines;
 }
 
+function outputDate(dt){
+  // create a date string like Monday, December 3, 2018 from Date dt
+  var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var month = ["January", "February", "March", "April", "May", "June", "July",
+               "August", "September", "October", "November", "December"];
+  var dateString =
+      weekday[dt.getDay()] + ", " +
+      month[dt.getMonth()] + " " +
+      dt.getDate() + ", " +
+      dt.getFullYear();
+  return dateString;
+}
+
 async function processData(){
   const fetchData = fetchTableauStockData();
   const dataset = await fetchData;
@@ -63,6 +76,8 @@ async function processData(){
                           "translate(" + padding + ", 0)");
 
   const avgClose = d3.mean(dataset, (d) => d["Close"]);
+  const maxY = d3.max(dataset, (d) => d["Close"]);
+  const maxIntraDayRange = d3.max(dataset, (d) => d["High"] - d["Low"]);
 
   header_g.append("text")
           .text("### weeks")
@@ -88,10 +103,36 @@ async function processData(){
           .attr("x", 0.75 * (w - 2*padding))
           .attr("y", topmargin/2 + 15);
 
+
+
   // create a g to group the chart elements
   var g = svg.append("g")
              .attr("transform",
                    "translate(" + padding + "," + topmargin + ")");
+
+   // define gradients
+   svg.append("linearGradient")
+       .attr("id", "temperature-gradient")
+       .attr("gradientUnits", "userSpaceOnUse")
+       .attr("x1", 0)
+       .attr("y1", yScale(0))
+       .attr("x2", 0)
+       .attr("y2", yScale(avgClose))
+     .selectAll("stop")
+       .data([
+         {offset: "0%", color: "Salmon"},
+         {offset: "100%", color: "Salmon"},
+         {offset: "100%", color: "SteelBlue"}
+       ])
+     .enter().append("stop")
+       .attr("offset", function(d) { return d.offset; })
+       .attr("stop-color", function(d) { return d.color; });
+
+ // prepare tooltip to display for scatterplot
+ var tooltip = d3.select("body")
+                 .append("div")
+                 .attr("class", "tooltip")
+                 .text("a simple tooltip");
 
   // add scatter plot
   g.selectAll("circle")
@@ -101,7 +142,61 @@ async function processData(){
      .attr("cx", (d, i) => xScale(d["Date"]) )
      .attr("cy", (d, i) => yScale(d["Close"]))
      .attr("r", 2)
-     .attr("class", "gradient-fill");
+     .attr("class", "gradient-fill")
+     .on("mouseover", function(d){
+       var html = "<span style='font-size: 1.2em;'>" + outputDate(d["Date"]) + "</span>" + "<br/>" +
+                  "High: " + d["High"].toFixed(2) + "<br/>" +
+                  "Low: " + d["Low"].toFixed(2) + "<br/>" +
+                  "Close: " + d["Close"].toFixed(2) + "<br/>";
+
+       var tooltipWidth = Math.round(Number(
+                                  tooltip.style('width')
+                                         // take of 'px'
+                                         .slice(0, -2)));
+       var barWidth = 50;
+       var maxBarHeight = 200;
+       var barTopMargin = 20;
+
+       // create the bar representing intra day price range and the scale
+       var bars = [{"top":maxY, "bottom": 0, "color": "white", "stroke": "gray"},
+                   {"top":d["High"], "bottom": d["Low"], "color": "#D3D3D3", "stroke": "none"}];
+
+       var tooltip_svg = tooltip.html(html)
+              .append("svg")
+              .attr("transform",
+                    "translate(0, " + barTopMargin + ")")
+              .attr("height", 500);
+       tooltip_svg.selectAll("rect")
+              .data(bars)
+              .enter()
+              .append("rect")
+              .attr("x", tooltipWidth/2 - barWidth/2)
+              .attr("y", (dt, i) => yScale(dt["top"]))
+              .attr("width", barWidth)
+              .attr("height", (dt, i) => yScale(dt["bottom"]) - yScale(dt["top"]))
+              .attr("fill", (dt, i) => dt["color"])
+              .attr("stroke", (dt, i) => dt["stroke"])
+              ;
+
+       var curCircle = d3.select(this);
+
+       // create the circle representing closing price
+       tooltip.select("svg")
+              .append("circle")
+              .attr("class", "gradient-fill")
+              .attr("cx", tooltipWidth/2)
+              .attr("cy", yScale(d["Close"]))
+              .attr("r", 2)
+              .attr("fill", curCircle.attr("fill"));
+
+       tooltip.style("left", (d3.event.pageX + 15) + "px")
+              .style("top", (d3.event.pageY - 28) + "px")
+              .style("opacity", 0.9);
+
+     })
+     .on("mouseout", function(d){
+       tooltip.style("opacity", 0);
+     });
 
   // add labels
   g.selectAll("text")
@@ -135,31 +230,12 @@ async function processData(){
     .text("Price ($)");
 
    // draw the line path with different colors compared to the selected threshold value
-   g.append("linearGradient")
-       .attr("id", "temperature-gradient")
-       .attr("gradientUnits", "userSpaceOnUse")
-       .attr("x1", 0)
-       .attr("y1", yScale(0))
-       .attr("x2", 0)
-       .attr("y2", yScale(avgClose))
-     .selectAll("stop")
-       .data([
-         {offset: "0%", color: "Salmon"},
-         {offset: "100%", color: "Salmon"},
-         {offset: "100%", color: "SteelBlue"}
-       ])
-     .enter().append("stop")
-       .attr("offset", function(d) { return d.offset; })
-       .attr("stop-color", function(d) { return d.color; });
+
 
 
    var line = d3.line()
                 .x(function(d) { return xScale(d["Date"])})
-                .y(function(d) { return yScale(d["Close"])})
-   ;
-
-
-
+                .y(function(d) { return yScale(d["Close"])});
    g.append("path")
     .datum(dataset)
     .attr("fill", "none")
@@ -179,6 +255,7 @@ async function processData(){
      .attr("stroke-width", 0.9)
      .style("stroke-dasharray", ("3, 1"))
      .attr("d", referenceLine);
+
 }
 
 processData();
