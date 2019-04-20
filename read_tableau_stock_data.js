@@ -302,18 +302,18 @@ async function processData(){
    const xAxis = d3.axisBottom(xScale);
    const yAxis = d3.axisLeft(yScale);
 
-   g.append("g")
-      .attr("transform", "translate(0," + (h - topmargin - padding) + ")")
-      .call(xAxis);
+//   g.append("g")
+//      .attr("transform", "translate(0," + (h - topmargin - padding) + ")")
+//      .call(xAxis);
 
-   g.append("g")
-    .call(yAxis)
-    .append("text")
-    .attr("fill", "#000")
-    .attr("dy", "0.71em")
-    .attr("transform", "translate(-32," + (0.5*(h - topmargin - padding)) + ")" +
-                       "rotate(-90)")
-    .text("Price ($)");
+//   g.append("g")
+//    .call(yAxis)
+//    .append("text")
+//    .attr("fill", "#000")
+//    .attr("dy", "0.71em")
+//    .attr("transform", "translate(-32," + (0.5*(h - topmargin - padding)) + ")" +
+//                       "rotate(-90)")
+//    .text("Price ($)");
 
    // draw the line path with different colors compared to the selected threshold value
    var line = d3.line()
